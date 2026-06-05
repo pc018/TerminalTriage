@@ -201,20 +201,23 @@ class TriageTerminal:
         kb = KeyBindings()
 
         @kb.add("c-a")
-        def _(event) -> None:  # noqa: ANN001
+        async def _(event) -> None:  # noqa: ANN001
             """Ctrl+A: open a one-off AI side prompt."""
-            from prompt_toolkit.application import run_in_terminal
+            from prompt_toolkit.application import in_terminal
 
-            def ask() -> None:
-                from prompt_toolkit import prompt as ptk_prompt
-
-                try:
-                    question = ptk_prompt("ai> ")
-                except (EOFError, KeyboardInterrupt):
-                    return
-                if question.strip():
-                    self._handle_ai(question.strip())
-
-            run_in_terminal(ask)
+            async with in_terminal():
+                question = await self._ask_side_prompt()
+                if question:
+                    self._handle_ai(question)
 
         return kb
+
+    async def _ask_side_prompt(self) -> str:
+        """Read a one-off question from a nested prompt; '' if cancelled/blank."""
+        from prompt_toolkit import PromptSession
+
+        try:
+            question = await PromptSession().prompt_async("ai> ")
+        except (EOFError, KeyboardInterrupt):
+            return ""
+        return question.strip()

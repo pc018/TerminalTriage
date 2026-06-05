@@ -99,8 +99,11 @@ Once inside, use it like a normal shell. Commands:
 | Command            | Action                                            |
 | ------------------ | ------------------------------------------------- |
 | `<shell command>`  | Run it locally (e.g. `kubectl get pods`, `ls`).   |
-| `claude on` / `off`| Toggle proactive AI analysis of command output.   |
+| `ai on` / `off`    | Toggle proactive AI analysis of command output.   |
 | `/ai <question>`   | Ask the AI a free-form question.                  |
+| `/claude`          | Switch the AI provider to Anthropic (Claude).     |
+| `/openai`          | Switch the AI provider to OpenAI.                 |
+| `/gemini`          | Switch the AI provider to Google Gemini.          |
 | `help`             | List commands.                                    |
 | `exit` / `quit`    | Leave the terminal.                               |
 | `Ctrl+A`           | Open a one-off AI side prompt.                    |
@@ -108,7 +111,7 @@ Once inside, use it like a normal shell. Commands:
 Example:
 
 ```text
-(triage) claude on
+(triage) ai on
 AI analysis: ENABLED
 (triage) 🤖 kubectl get pods
 ... command output ...

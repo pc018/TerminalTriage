@@ -27,8 +27,9 @@ troubleshooting questions.
 
 ## Workflow
 
-1. **Enable analysis:** type `claude on` to auto-explain command output, or leave it off
-   and explain on demand.
+1. **Enable analysis:** type `ai on` to auto-explain command output, or leave it off
+   and explain on demand. Switch providers at any time with `/claude`, `/openai`, or
+   `/gemini`.
 2. **Reproduce the problem:** run the command as you normally would, e.g.
    `kubectl get pods -n prod`. Tab completes kubectl verbs, resources, and flags.
 3. **Read the streamed analysis:** when analysis mode is on, the AI prints an

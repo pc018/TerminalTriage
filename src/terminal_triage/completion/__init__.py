@@ -2,7 +2,7 @@
 
 ``build_completer`` merges several layers:
 
-* built-in commands (``/ai``, ``claude on|off``, ``help``, ``exit`` …),
+* built-in commands (``/ai``, ``ai on|off``, ``/claude``, ``help``, ``exit`` …),
 * executables found on ``$PATH`` (first word only),
 * filesystem paths (later words),
 * the dedicated :class:`~terminal_triage.completion.kubectl.KubectlCompleter`.
@@ -20,8 +20,11 @@ from .kubectl import KubectlCompleter
 
 BUILTIN_COMMANDS: list[str] = [
     "/ai",
-    "claude on",
-    "claude off",
+    "/claude",
+    "/openai",
+    "/gemini",
+    "ai on",
+    "ai off",
     "help",
     "exit",
     "quit",

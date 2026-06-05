@@ -2,19 +2,30 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 
 from .ai import AIProvider, get_provider
 from .ai.base import ProviderError
-from .config import Settings
+from .config import API_KEY_ENV, DEFAULT_MODELS, Settings
 from .prompts import build_analysis_prompt, build_question_prompt
 from .shell import CommandResult, run_command
 from .ui import BOLD, CYAN, GREEN, RED, RESET, YELLOW
 
+# Provider-switch command -> provider name understood by the factory/config.
+PROVIDER_COMMANDS: dict[str, str] = {
+    "/claude": "anthropic",
+    "/openai": "openai",
+    "/gemini": "gemini",
+}
+
 HELP_TEXT = f"""{BOLD}TerminalTriage commands{RESET}
   <any shell command>   Run it locally (e.g. `kubectl get pods`, `ls -la`).
-  claude on | off       Toggle proactive AI analysis of command output.
+  ai on | off           Toggle proactive AI analysis of command output.
   /ai <question>        Ask the AI a free-form question.
+  /claude               Switch the AI provider to Anthropic (Claude).
+  /openai               Switch the AI provider to OpenAI.
+  /gemini               Switch the AI provider to Google Gemini.
   help                  Show this help.
   exit | quit           Leave the terminal.
 
@@ -91,8 +102,13 @@ class TriageTerminal:
             self.output(HELP_TEXT)
             return False
 
-        if line == "claude" or line.startswith("claude "):
-            self._handle_claude(line[len("claude") :].strip())
+        if line == "ai" or line.startswith("ai "):
+            self._handle_ai_toggle(line[len("ai") :].strip())
+            return False
+
+        command = line.split(maxsplit=1)[0]
+        if command in PROVIDER_COMMANDS:
+            self._handle_switch_provider(PROVIDER_COMMANDS[command])
             return False
 
         if line == "/ai" or line.startswith("/ai "):
@@ -103,7 +119,7 @@ class TriageTerminal:
         self._handle_shell(line)
         return False
 
-    def _handle_claude(self, arg: str) -> None:
+    def _handle_ai_toggle(self, arg: str) -> None:
         arg = arg.lower()
         if arg == "on":
             if self.get_provider() is None:
@@ -114,7 +130,42 @@ class TriageTerminal:
             self.analysis_mode = False
             self.output(f"{YELLOW}AI analysis: DISABLED{RESET}")
         else:
-            self.output("Usage: claude [on|off]")
+            self.output("Usage: ai [on|off]")
+
+    def _handle_switch_provider(self, provider: str) -> None:
+        """Switch the active AI provider, re-resolving its API key and model."""
+        previous = (
+            self.settings.provider,
+            self.settings.api_key,
+            self.settings.model,
+            self._provider,
+            self._provider_attempted,
+        )
+
+        self.settings.provider = provider
+        key_env = API_KEY_ENV.get(provider)
+        self.settings.api_key = os.getenv(key_env) if key_env else None
+        self.settings.model = DEFAULT_MODELS.get(provider, "")
+
+        # Force the provider to be rebuilt on next use.
+        self._provider = None
+        self._provider_attempted = False
+
+        if self.get_provider() is None:
+            # Could not build the new provider; restore the previous one.
+            (
+                self.settings.provider,
+                self.settings.api_key,
+                self.settings.model,
+                self._provider,
+                self._provider_attempted,
+            ) = previous
+            return
+
+        self.output(
+            f"{GREEN}AI provider: {self.settings.provider} "
+            f"({self.settings.model}){RESET}"
+        )
 
     def _handle_ai(self, question: str) -> None:
         if not question:

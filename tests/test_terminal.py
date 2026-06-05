@@ -38,20 +38,20 @@ def test_shell_without_analysis_does_not_call_provider(term, fake_provider):
     assert fake_provider.prompts == []
 
 
-def test_claude_on_enables_analysis(term, recorder):
-    term.handle_line("claude on")
+def test_ai_on_enables_analysis(term, recorder):
+    term.handle_line("ai on")
     assert term.analysis_mode is True
     assert "ENABLED" in recorder.text
 
 
-def test_claude_off_disables_analysis(term):
-    term.handle_line("claude on")
-    term.handle_line("claude off")
+def test_ai_off_disables_analysis(term):
+    term.handle_line("ai on")
+    term.handle_line("ai off")
     assert term.analysis_mode is False
 
 
 def test_analysis_streams_provider(term, fake_provider, recorder):
-    term.handle_line("claude on")
+    term.handle_line("ai on")
     term.handle_line("echo hi")
     # Provider was asked to analyze the command output.
     assert len(fake_provider.prompts) == 1
@@ -87,9 +87,45 @@ def test_ai_without_prior_command_has_no_context(term, fake_provider):
     assert "most recent command" not in fake_provider.prompts[0]
 
 
-def test_claude_unknown_arg_shows_usage(term, recorder):
-    term.handle_line("claude maybe")
-    assert "Usage: claude" in recorder.text
+def test_ai_unknown_arg_shows_usage(term, recorder):
+    term.handle_line("ai maybe")
+    assert "Usage: ai" in recorder.text
+
+
+def test_switch_provider_updates_settings(term, recorder, monkeypatch):
+    """`/openai` re-resolves the provider, API key and default model."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    term.handle_line("/openai")
+    assert term.settings.provider == "openai"
+    assert term.settings.api_key == "sk-test"
+    assert term.settings.model == "gpt-4o-mini"
+    assert "openai" in recorder.text
+
+
+def test_switch_provider_rebuilds_on_next_use(term, monkeypatch):
+    """After switching, the next AI call constructs the newly selected provider."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    term.handle_line("/openai")
+    provider = term.get_provider()
+    assert provider is not None
+    assert provider.name == "openai"
+
+
+def test_switch_provider_without_key_keeps_previous(term, recorder, monkeypatch):
+    """A failed switch (no API key) restores the previous provider and settings."""
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    before = term.get_provider()
+    term.handle_line("/gemini")
+    assert term.settings.provider == "fake"
+    assert term.get_provider() is before
+    assert "No API key" in recorder.text
+
+
+def test_claude_command_switches_to_anthropic(term, recorder, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant")
+    term.handle_line("/claude")
+    assert term.settings.provider == "anthropic"
+    assert "anthropic" in recorder.text
 
 
 def _ctrl_a_handler(term):

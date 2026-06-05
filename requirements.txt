@@ -1,0 +1,9 @@
+# TerminalTriage runtime dependencies.
+#
+# This installs the package in editable mode with ALL AI providers
+# (Anthropic + OpenAI + Gemini). To install only one provider instead, use e.g.:
+#
+#     pip install -e .[anthropic]
+#
+# Dependency versions are declared in pyproject.toml.
+-e .[all]

@@ -1,60 +1,115 @@
 # AI-Powered Python Terminal for Troubleshooting
 
-A Python-based interactive terminal with an integrated AI backend that runs silently in the background, providing real-time assistance and troubleshooting support.
+TerminalTriage is an interactive terminal with an integrated AI backend. You use it
+like a normal shell; when analysis mode is on, each command and its output are streamed
+to an AI model that explains errors, summarizes results, and suggests the next step.
 
 ## Overview
 
-This tool combines a familiar command-line interface with the intelligence of an AI model. As you type commands or encounter errors, the AI analyzes the context and suggests fixes, explains issues, or recommends next steps—without interrupting your workflow.
+This tool combines a familiar command-line interface with the intelligence of an AI
+model. Run commands as usual — and when something fails, the AI analyzes the context and
+suggests fixes, explains the issue, or recommends what to try next. You can also ask it
+free-form questions without leaving the terminal.
 
 ## Features
 
-- **Native Python terminal** with command history and auto-completion
-- **Background AI engine** that monitors session activity
-- **Proactive troubleshooting** – detects errors and suggests solutions
-- **Natural language queries** – ask the AI for help using plain English
-- **Low latency** – AI runs locally or via a lightweight API
-- **Extensible** – easily add custom troubleshooting rules or connect to different AI providers
+- **Interactive terminal** with persistent command history and auto-completion
+  (built on [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)).
+- **kubectl-aware completion** for verbs, resource types, and common flags.
+- **Streaming AI analysis** – the response prints as it arrives.
+- **Multiple providers** – Anthropic Claude, OpenAI, or Google Gemini, selectable via
+  configuration.
+- **Proactive troubleshooting** – toggle analysis mode to auto-explain command output.
+- **Natural-language queries** – ask the AI for help with `/ai <question>`.
+- **Ctrl+A side prompt** – pop open a one-off AI question at any time.
 
 ## Installation
 
 ```bash
 git clone https://github.com/pc018/TerminalTriage.git
 cd TerminalTriage
-pip install -r requirements.txt
 
-Usage
+# Install with all AI providers:
+pip install -e '.[all]'
 
-Start the terminal with:
-python triage
+# ...or install just the one you use:
+pip install -e '.[anthropic]'   # or .[openai] / .[gemini]
+```
 
-Once inside, use the terminal as you normally would. The AI will listen in the background and offer assistance when needed. To explicitly ask for help, type:
-text
+Requires Python 3.10+.
 
-/ai What does this error mean?
+## Configuration
 
-Or simply press Ctrl + A to open a side prompt for AI queries.
+Copy `.env.example` to `.env` and fill in the provider you want to use:
 
-Configuration
+```ini
+# Which provider: anthropic | openai | gemini
+AI_PROVIDER=anthropic
 
-Create a .env file to set your AI provider and API key (optional if using a local model):
-text
+# Only the matching key is required:
+ANTHROPIC_API_KEY=your_key_here
+# OPENAI_API_KEY=your_key_here
+# GEMINI_API_KEY=your_key_here
 
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_key_here
-AI_MODEL=gpt-3.5-turbo
+# Optional overrides:
+# AI_MODEL=claude-sonnet-4-6
+# AI_MAX_TOKENS=4096
+```
 
-Requirements
+Real environment variables take precedence over `.env`. If `AI_MODEL` is unset, a
+sensible default is chosen per provider (`claude-sonnet-4-6`, `gpt-4o-mini`,
+`gemini-2.0-flash`).
 
-    Python 3.13+
+## Usage
 
-    Dependencies listed in requirements.txt
+Start the terminal:
 
-Contributing
+```bash
+triage
+# or, equivalently:
+python -m terminal_triage
+```
 
-Pull requests and issue reports are welcome. Please ensure your code passes existing tests and includes appropriate documentation.
-License
+Useful flags: `triage --provider openai`, `triage --model gpt-4o`, `triage --analyze`.
 
-MIT
-Acknowledgements
+Once inside, use it like a normal shell. Commands:
 
-Built for system administrators, developers, and anyone who spends hours debugging in the terminal.
+| Command            | Action                                            |
+| ------------------ | ------------------------------------------------- |
+| `<shell command>`  | Run it locally (e.g. `kubectl get pods`, `ls`).   |
+| `claude on` / `off`| Toggle proactive AI analysis of command output.   |
+| `/ai <question>`   | Ask the AI a free-form question.                  |
+| `help`             | List commands.                                    |
+| `exit` / `quit`    | Leave the terminal.                               |
+| `Ctrl+A`           | Open a one-off AI side prompt.                    |
+
+Example:
+
+```text
+(triage) claude on
+AI analysis: ENABLED
+(triage) 🤖 kubectl get pods
+... command output ...
+--- 🧠 anthropic is analyzing ---
+The error indicates no cluster is configured. Run `kubectl config ...`
+```
+
+## Development
+
+```bash
+pip install -e '.[all,dev]'
+pytest            # run the test suite (no network calls)
+ruff check .      # lint
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more, and [CLAUDE.md](CLAUDE.md) for an
+architecture overview.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Acknowledgements
+
+Built for system administrators, developers, and anyone who spends hours debugging in
+the terminal.

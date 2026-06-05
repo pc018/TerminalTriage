@@ -32,6 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Start with proactive AI analysis enabled.",
     )
     parser.add_argument(
+        "--kubectl-live-completion",
+        action="store_true",
+        help=(
+            "Enable live kubectl tab-completion via 'kubectl __complete' "
+            "(talks to the cluster). Off by default; overrides "
+            "AI_KUBECTL_LIVE_COMPLETION."
+        ),
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
@@ -53,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
         settings.model = args.model
     if args.analyze:
         settings.auto_analyze = True
+    if args.kubectl_live_completion:
+        settings.kubectl_live_completion = True
 
     if settings.api_key is None:
         print(

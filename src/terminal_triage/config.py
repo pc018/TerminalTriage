@@ -37,6 +37,9 @@ class Settings:
     max_tokens: int = DEFAULT_MAX_TOKENS
     history_file: Path = Path(DEFAULT_HISTORY_FILE).expanduser()
     auto_analyze: bool = False
+    # When True, kubectl tab-completion delegates to ``kubectl __complete``, which
+    # talks to the cluster. Off by default so completion stays fully offline.
+    kubectl_live_completion: bool = False
 
 
 def _int_env(name: str, default: int) -> int:
@@ -47,6 +50,13 @@ def _int_env(name: str, default: int) -> int:
         return int(raw)
     except ValueError:
         return default
+
+
+def _bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def load_settings(load_env: bool = True) -> Settings:
@@ -75,4 +85,5 @@ def load_settings(load_env: bool = True) -> Settings:
         model=model,
         max_tokens=_int_env("AI_MAX_TOKENS", DEFAULT_MAX_TOKENS),
         history_file=history_file,
+        kubectl_live_completion=_bool_env("AI_KUBECTL_LIVE_COMPLETION", False),
     )

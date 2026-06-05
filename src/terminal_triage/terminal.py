@@ -166,7 +166,7 @@ class TriageTerminal:
         self.settings.history_file.parent.mkdir(parents=True, exist_ok=True)
         session: PromptSession = PromptSession(
             history=FileHistory(str(self.settings.history_file)),
-            completer=build_completer(),
+            completer=build_completer(self.settings.kubectl_live_completion),
             complete_while_typing=False,
             key_bindings=self._key_bindings(),
         )

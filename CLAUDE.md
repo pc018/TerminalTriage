@@ -22,7 +22,8 @@ src/terminal_triage/
   terminal.py        TriageTerminal: prompt_toolkit REPL + dispatch (handle_line).
   completion/
     __init__.py      build_completer(): merges builtins + $PATH execs + paths + kubectl.
-    kubectl.py       KubectlCompleter: static verb/resource/flag tables (offline).
+    kubectl.py       KubectlCompleter: offline static verb/resource/flag tables;
+                     opt-in live mode delegates to `kubectl __complete`.
   ai/
     base.py          AIProvider ABC (stream()), ProviderError.
     factory.py       get_provider(settings); lazy imports per provider.
@@ -55,6 +56,13 @@ This repo's dev environment uses `uv`; create a venv with
 - **Dispatch is decoupled from prompt_toolkit.** `TriageTerminal.handle_line()` contains
   all routing logic and is unit-tested directly; `run()` only wires up the interactive
   session (history, completer, Ctrl+A binding).
+- **kubectl completion is offline by default, live by opt-in.** `KubectlCompleter` serves
+  a static verb/resource/flag grammar with no subprocess calls. With `live=True` (set by
+  `--kubectl-live-completion` / `AI_KUBECTL_LIVE_COMPLETION`, threaded through
+  `Settings.kubectl_live_completion` -> `build_completer(kubectl_live)`), it delegates to
+  `kubectl __complete` for cluster-aware results (CRDs, namespace/pod names), with a short
+  timeout and a transparent fallback to the static grammar on any failure. The subprocess
+  runner is injectable so tests stay offline.
 
 ## Conventions
 
@@ -64,5 +72,7 @@ This repo's dev environment uses `uv`; create a venv with
   SDK import, register it in `ai/factory.py::_PROVIDERS`, add its default model and
   API-key env var in `config.py`, and add a `pyproject.toml` extra.
 - **Extending completion:** add static tables to `completion/kubectl.py` or a sibling
-  module and merge it in `completion/__init__.py::build_completer`.
+  module and merge it in `completion/__init__.py::build_completer`. Keep the offline
+  static path working even when a live (subprocess-backed) path exists — it's the default
+  and the fallback, and it's what keeps tests network-free.
 - Keep line length ≤ 100 (ruff config in `pyproject.toml`).

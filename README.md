@@ -15,7 +15,9 @@ free-form questions without leaving the terminal.
 
 - **Interactive terminal** with persistent command history and auto-completion
   (built on [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)).
-- **kubectl-aware completion** for verbs, resource types, and common flags.
+- **kubectl-aware completion** for verbs, resource types, and common flags — offline
+  by default, with opt-in live completion that delegates to `kubectl __complete` for
+  cluster-aware suggestions (CRDs, real namespace/pod names).
 - **Streaming AI analysis** – the response prints as it arrives.
 - **Multiple providers** – Anthropic Claude, OpenAI, or Google Gemini, selectable via
   configuration.
@@ -54,11 +56,30 @@ ANTHROPIC_API_KEY=your_key_here
 # Optional overrides:
 # AI_MODEL=claude-sonnet-4-6
 # AI_MAX_TOKENS=4096
+
+# Live kubectl completion (talks to the cluster). Off by default:
+# AI_KUBECTL_LIVE_COMPLETION=1
 ```
 
 Real environment variables take precedence over `.env`. If `AI_MODEL` is unset, a
 sensible default is chosen per provider (`claude-sonnet-4-6`, `gpt-4o-mini`,
 `gemini-2.0-flash`).
+
+### kubectl completion
+
+By default, kubectl tab-completion is fully offline, served from a built-in static
+grammar of verbs, resource types, and flags. To get authoritative, cluster-aware
+suggestions — every subcommand, custom resources (CRDs), and dynamic values such as
+real namespace and pod names — enable **live completion**, which delegates to
+`kubectl __complete` (the engine behind `kubectl completion bash|zsh`):
+
+```bash
+triage --kubectl-live-completion        # or set AI_KUBECTL_LIVE_COMPLETION=1
+```
+
+This is opt-in because it runs `kubectl` (and thus contacts the cluster) as you type.
+Calls are capped by a short timeout, and if `kubectl` is unavailable or the call fails
+it transparently falls back to the offline grammar.
 
 ## Usage
 
@@ -70,7 +91,8 @@ triage
 python -m terminal_triage
 ```
 
-Useful flags: `triage --provider openai`, `triage --model gpt-4o`, `triage --analyze`.
+Useful flags: `triage --provider openai`, `triage --model gpt-4o`, `triage --analyze`,
+`triage --kubectl-live-completion`.
 
 Once inside, use it like a normal shell. Commands:
 

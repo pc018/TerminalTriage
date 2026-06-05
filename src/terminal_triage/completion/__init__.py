@@ -74,6 +74,12 @@ class CommandCompleter(Completer):
         yield from self._path_completer.get_completions(document, complete_event)
 
 
-def build_completer() -> Completer:
-    """Return the merged completer used by the REPL."""
-    return merge_completers([CommandCompleter(), KubectlCompleter()])
+def build_completer(kubectl_live: bool = False) -> Completer:
+    """Return the merged completer used by the REPL.
+
+    ``kubectl_live`` enables cluster-aware kubectl completion (opt-in; see
+    :class:`~terminal_triage.completion.kubectl.KubectlCompleter`).
+    """
+    return merge_completers(
+        [CommandCompleter(), KubectlCompleter(live=kubectl_live)]
+    )

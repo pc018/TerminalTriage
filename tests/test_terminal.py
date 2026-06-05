@@ -69,6 +69,22 @@ def test_ai_without_question_shows_usage(term, recorder, fake_provider):
     assert fake_provider.prompts == []
 
 
+def test_ai_includes_last_command_context(term, fake_provider):
+    """After running a command, /ai folds it in as context (no copy-paste)."""
+    term.handle_line("echo hello-world")
+    term.handle_line("/ai what does that output mean?")
+    assert len(fake_provider.prompts) == 1
+    prompt = fake_provider.prompts[0]
+    assert "what does that output mean?" in prompt
+    assert "echo hello-world" in prompt
+    assert "hello-world" in prompt
+
+
+def test_ai_without_prior_command_has_no_context(term, fake_provider):
+    term.handle_line("/ai how do I list pods?")
+    assert "most recent command" not in fake_provider.prompts[0]
+
+
 def test_claude_unknown_arg_shows_usage(term, recorder):
     term.handle_line("claude maybe")
     assert "Usage: claude" in recorder.text

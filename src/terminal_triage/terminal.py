@@ -8,7 +8,7 @@ from .ai import AIProvider, get_provider
 from .ai.base import ProviderError
 from .config import Settings
 from .prompts import build_analysis_prompt, build_question_prompt
-from .shell import run_command
+from .shell import CommandResult, run_command
 from .ui import BOLD, CYAN, GREEN, RED, RESET, YELLOW
 
 HELP_TEXT = f"""{BOLD}TerminalTriage commands{RESET}
@@ -40,6 +40,7 @@ class TriageTerminal:
         self._provider = provider
         self._provider_attempted = provider is not None
         self.analysis_mode = settings.auto_analyze
+        self._last_result: CommandResult | None = None
 
     # -- provider management ------------------------------------------------
 
@@ -91,11 +92,11 @@ class TriageTerminal:
             return False
 
         if line == "claude" or line.startswith("claude "):
-            self._handle_claude(line[len("claude"):].strip())
+            self._handle_claude(line[len("claude") :].strip())
             return False
 
         if line == "/ai" or line.startswith("/ai "):
-            question = line[len("/ai"):].strip()
+            question = line[len("/ai") :].strip()
             self._handle_ai(question)
             return False
 
@@ -119,10 +120,22 @@ class TriageTerminal:
         if not question:
             self.output("Usage: /ai <question>")
             return
-        self._stream(build_question_prompt(question))
+        result = self._last_result
+        if result is None:
+            prompt = build_question_prompt(question)
+        else:
+            prompt = build_question_prompt(
+                question,
+                command=result.command,
+                stdout=result.stdout,
+                stderr=result.stderr,
+                returncode=result.returncode,
+            )
+        self._stream(prompt)
 
     def _handle_shell(self, line: str) -> None:
         result = run_command(line)
+        self._last_result = result
         if result.error:
             self.output(f"{RED}{result.error}{RESET}")
         if result.stdout:
@@ -132,7 +145,12 @@ class TriageTerminal:
 
         if self.analysis_mode:
             self._stream(
-                build_analysis_prompt(result.command, result.stdout, result.stderr)
+                build_analysis_prompt(
+                    result.command,
+                    result.stdout,
+                    result.stderr,
+                    result.returncode,
+                )
             )
 
     # -- interactive session ------------------------------------------------

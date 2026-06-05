@@ -74,6 +74,60 @@ def test_claude_unknown_arg_shows_usage(term, recorder):
     assert "Usage: claude" in recorder.text
 
 
+def _ctrl_a_handler(term):
+    """Return the Ctrl+A key-binding handler from the terminal's bindings."""
+    from prompt_toolkit.keys import Keys
+
+    kb = term._key_bindings()
+    return kb.get_bindings_for_keys((Keys.ControlA,))[0].handler
+
+
+def test_ctrl_a_opens_side_prompt_and_calls_ai(term, fake_provider, monkeypatch):
+    """Ctrl+A runs the side prompt in the terminal and forwards it to the AI."""
+    import prompt_toolkit
+    import prompt_toolkit.application as pt_app
+
+    # run_in_terminal would suspend the live app; here just run the callback.
+    monkeypatch.setattr(pt_app, "run_in_terminal", lambda func: func())
+    # The nested prompt returns a canned question instead of reading a TTY.
+    monkeypatch.setattr(prompt_toolkit, "prompt", lambda *a, **k: "why is my pod failing?")
+
+    _ctrl_a_handler(term)(event=None)
+
+    assert len(fake_provider.prompts) == 1
+    assert "why is my pod failing?" in fake_provider.prompts[0]
+
+
+def test_ctrl_a_cancelled_prompt_does_not_call_ai(term, fake_provider, monkeypatch):
+    """Cancelling the side prompt (Ctrl+C / Ctrl+D) is a no-op."""
+    import prompt_toolkit
+    import prompt_toolkit.application as pt_app
+
+    monkeypatch.setattr(pt_app, "run_in_terminal", lambda func: func())
+
+    def _raise(*a, **k):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(prompt_toolkit, "prompt", _raise)
+
+    _ctrl_a_handler(term)(event=None)
+
+    assert fake_provider.prompts == []
+
+
+def test_ctrl_a_blank_question_does_not_call_ai(term, fake_provider, monkeypatch):
+    """An empty/whitespace side prompt is ignored."""
+    import prompt_toolkit
+    import prompt_toolkit.application as pt_app
+
+    monkeypatch.setattr(pt_app, "run_in_terminal", lambda func: func())
+    monkeypatch.setattr(prompt_toolkit, "prompt", lambda *a, **k: "   ")
+
+    _ctrl_a_handler(term)(event=None)
+
+    assert fake_provider.prompts == []
+
+
 def test_provider_error_is_handled(settings, recorder):
     """If no provider can be built, AI commands fail gracefully."""
     # No provider injected and a provider that can't be constructed (fake

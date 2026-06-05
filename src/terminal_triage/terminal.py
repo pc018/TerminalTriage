@@ -185,6 +185,8 @@ class TriageTerminal:
         @kb.add("c-a")
         def _(event) -> None:  # noqa: ANN001
             """Ctrl+A: open a one-off AI side prompt."""
+            from prompt_toolkit.application import run_in_terminal
+
             def ask() -> None:
                 from prompt_toolkit import prompt as ptk_prompt
 
@@ -195,6 +197,6 @@ class TriageTerminal:
                 if question.strip():
                     self._handle_ai(question.strip())
 
-            event.app.run_in_terminal(ask)
+            run_in_terminal(ask)
 
         return kb

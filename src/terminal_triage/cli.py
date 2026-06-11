@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.kubectl_live_completion:
         settings.kubectl_live_completion = True
 
-    if settings.api_key is None:
+    if settings.api_key is None and settings.auth_token is None:
         print(
             f"{YELLOW}Warning: no API key found for provider "
             f"'{settings.provider}'. AI features will be unavailable until you "

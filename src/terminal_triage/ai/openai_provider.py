@@ -10,8 +10,14 @@ from .base import AIProvider, ProviderError
 class OpenAIProvider(AIProvider):
     name = "openai"
 
-    def __init__(self, api_key: str, model: str, max_tokens: int = 4096) -> None:
-        super().__init__(api_key, model, max_tokens)
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        max_tokens: int = 4096,
+        auth_token: str | None = None,
+    ) -> None:
+        super().__init__(api_key, model, max_tokens, auth_token=auth_token)
         try:
             from openai import OpenAI
         except ImportError as exc:  # pragma: no cover - exercised via monkeypatch

@@ -10,8 +10,14 @@ from .base import AIProvider, ProviderError
 class AnthropicProvider(AIProvider):
     name = "anthropic"
 
-    def __init__(self, api_key: str, model: str, max_tokens: int = 4096) -> None:
-        super().__init__(api_key, model, max_tokens)
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        max_tokens: int = 4096,
+        auth_token: str | None = None,
+    ) -> None:
+        super().__init__(api_key, model, max_tokens, auth_token=auth_token)
         try:
             from anthropic import Anthropic
         except ImportError as exc:  # pragma: no cover - exercised via monkeypatch
@@ -19,7 +25,10 @@ class AnthropicProvider(AIProvider):
                 "The 'anthropic' package is required for the Anthropic provider. "
                 "Install it with: pip install 'terminal-triage[anthropic]'"
             ) from exc
-        self._client = Anthropic(api_key=api_key)
+        if auth_token:
+            self._client = Anthropic(auth_token=auth_token)
+        else:
+            self._client = Anthropic(api_key=api_key)
 
     def stream(self, prompt: str) -> Iterator[str]:
         try:

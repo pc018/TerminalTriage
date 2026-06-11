@@ -20,10 +20,17 @@ class AIProvider(ABC):
     #: Short provider identifier, e.g. ``"anthropic"``.
     name: str = "base"
 
-    def __init__(self, api_key: str, model: str, max_tokens: int = 4096) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        max_tokens: int = 4096,
+        auth_token: str | None = None,
+    ) -> None:
         self.api_key = api_key
         self.model = model
         self.max_tokens = max_tokens
+        self.auth_token = auth_token
 
     @abstractmethod
     def stream(self, prompt: str) -> Iterator[str]:

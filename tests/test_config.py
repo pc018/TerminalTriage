@@ -17,6 +17,7 @@ def clean_env(monkeypatch):
         "ANTHROPIC_API_KEY",
         "OPENAI_API_KEY",
         "GEMINI_API_KEY",
+        "CLAUDE_CODE_OAUTH_TOKEN",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -55,3 +56,19 @@ def test_invalid_max_tokens_falls_back(monkeypatch):
     monkeypatch.setenv("AI_MAX_TOKENS", "not-a-number")
     settings = load_settings(load_env=False)
     assert settings.max_tokens == 4096
+
+
+def test_anthropic_oauth_token_fallback(monkeypatch):
+    monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "oat-token-123")
+    settings = load_settings(load_env=False)
+    assert settings.provider == "anthropic"
+    assert settings.api_key is None
+    assert settings.auth_token == "oat-token-123"
+
+
+def test_anthropic_api_key_takes_precedence_over_oauth(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-real-key")
+    monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "oat-token-123")
+    settings = load_settings(load_env=False)
+    assert settings.api_key == "sk-real-key"
+    assert settings.auth_token is None

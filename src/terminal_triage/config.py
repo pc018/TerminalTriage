@@ -40,6 +40,8 @@ class Settings:
     # When True, kubectl tab-completion delegates to ``kubectl __complete``, which
     # talks to the cluster. Off by default so completion stays fully offline.
     kubectl_live_completion: bool = False
+    # OAuth bearer token (e.g. CLAUDE_CODE_OAUTH_TOKEN) used instead of api_key.
+    auth_token: str | None = None
 
 
 def _int_env(name: str, default: int) -> int:
@@ -73,11 +75,14 @@ def load_settings(load_env: bool = True) -> Settings:
     key_env = API_KEY_ENV.get(provider)
     api_key = os.getenv(key_env) if key_env else None
 
+    # For Anthropic, fall back to CLAUDE_CODE_OAUTH_TOKEN when no API key is set.
+    auth_token: str | None = None
+    if provider == "anthropic" and not api_key:
+        auth_token = os.getenv("CLAUDE_CODE_OAUTH_TOKEN") or None
+
     model = os.getenv("AI_MODEL") or DEFAULT_MODELS.get(provider, "")
 
-    history_file = Path(
-        os.getenv("AI_HISTORY_FILE") or DEFAULT_HISTORY_FILE
-    ).expanduser()
+    history_file = Path(os.getenv("AI_HISTORY_FILE") or DEFAULT_HISTORY_FILE).expanduser()
 
     return Settings(
         provider=provider,
@@ -86,4 +91,5 @@ def load_settings(load_env: bool = True) -> Settings:
         max_tokens=_int_env("AI_MAX_TOKENS", DEFAULT_MAX_TOKENS),
         history_file=history_file,
         kubectl_live_completion=_bool_env("AI_KUBECTL_LIVE_COMPLETION", False),
+        auth_token=auth_token,
     )

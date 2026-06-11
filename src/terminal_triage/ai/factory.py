@@ -31,7 +31,7 @@ def get_provider(settings: Settings) -> AIProvider:
             f"Choose one of: {', '.join(available_providers())}."
         )
 
-    if not settings.api_key:
+    if not settings.api_key and not settings.auth_token:
         raise ProviderError(
             f"No API key set for provider '{settings.provider}'. "
             "Set the matching key in your environment or .env file."
@@ -43,7 +43,8 @@ def get_provider(settings: Settings) -> AIProvider:
     module = importlib.import_module(f"{__package__}.{module_name}")
     provider_cls = getattr(module, class_name)
     return provider_cls(
-        api_key=settings.api_key,
+        api_key=settings.api_key or "",
         model=settings.model,
         max_tokens=settings.max_tokens,
+        auth_token=settings.auth_token,
     )
